@@ -3,7 +3,7 @@
 [web.app]
 
 # HTML title tag content
-title = "hot-dog"
+title = "Berlin Rust Hack&Learn Web Resources"
 
 # include `assets` in web platform
 [web.resource]

@@ -2269,19 +2269,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hot-dog"
-version = "0.1.0"
-dependencies = [
- "axum",
- "dioxus",
- "dioxus-cli-config",
- "reqwest",
- "rusqlite",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "html5ever"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2821,6 +2808,19 @@ checksum = "db23b9e7e2b7831bbd8aac0bbeeeb7b68cbebc162b227e7052e8e55829a09212"
 dependencies = [
  "libc",
  "x11",
+]
+
+[[package]]
+name = "links"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "dioxus",
+ "dioxus-cli-config",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "tokio",
 ]
 
 [[package]]

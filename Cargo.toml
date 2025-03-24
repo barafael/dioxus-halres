@@ -1,5 +1,5 @@
 [package]
-name = "hot-dog"
+name = "links"
 version = "0.1.0"
 authors = ["Rafael Bachmann <rafael.bachmann.93@gmail.com>"]
 edition = "2021"
@@ -14,6 +14,7 @@ serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"], optional = true }
 
 [features]
+default = ["server"]
 web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
 mobile = ["dioxus/mobile"]

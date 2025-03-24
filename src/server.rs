@@ -1,16 +1,13 @@
 use crate::ServeConfigBuilder;
-use dioxus::prelude::DioxusRouterExt;
+use dioxus::prelude::*;
 use tokio::net::TcpListener;
 
 thread_local! {
     pub static DB: rusqlite::Connection = {
-        let conn = rusqlite::Connection::open("hotdog.db").unwrap();
+        let conn = rusqlite::Connection::open("halreslib.sqlite").unwrap();
 
         conn.execute_batch(
-            r#"CREATE TABLE IF NOT EXISTS dogs (
-                id INTEGER PRIMARY KEY,
-                url TEXT NOT NULL
-            );"#
+            include_str!("../create.sql")
         ).unwrap();
 
         conn
