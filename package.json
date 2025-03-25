@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "esbuild": "^0.25.1",
+    "tabulator-tables": "^6.3.1"
+  }
+}

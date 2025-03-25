@@ -10,6 +10,8 @@ use dioxus::prelude::*;
 enum Route {
     #[layout(NavBar)]
     #[route("/")]
+    Table,
+    #[route("/uris")]
     UrlList,
     #[route("/:..segments")]
     PageNotFound { segments: Vec<String> },
@@ -29,7 +31,7 @@ fn main() {
 
 #[component]
 pub fn App() -> Element {
-    let title = use_signal(|| "Berlin Rust Hack&Learn Web Ressources".to_string());
+    let title = use_signal(|| "Berlin Rust Hack&Learn Web Resources".to_string());
     use_context_provider(|| TitleState(title));
 
     rsx! {
