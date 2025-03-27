@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Table() -> Element {
-    let uris = use_server_future(|| crate::first_uris_in_db())?()
+    let uris = use_server_future(|| crate::load_uris_from_db())?()
         .unwrap()
         .unwrap();
 
