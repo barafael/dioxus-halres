@@ -5,8 +5,7 @@ authors = ["Rafael Bachmann <rafael.bachmann.93@gmail.com>"]
 edition = "2024"
 
 [dependencies]
-anyhow = { version = "1.0.97", optional = true }
-axum = { version = "0.7.9", optional = true }
+axum = { version = "=0.7.9", optional = true }
 blake3 = { version = "1.7.0", optional = true }
 chrono = { version = "0.4.40", optional = true }
 dioxus = { version = "0.6.0", features = ["fullstack", "router"] }
@@ -30,12 +29,10 @@ server = [
     "dep:rusqlite",
     "dep:chrono",
     "dep:blake3",
-    "dep:anyhow",
     "dep:select",
     "dep:futures",
 ]
 blake3 = ["dep:blake3"]
-anyhow = ["dep:anyhow"]
 select = ["dep:select"]
 futures = ["dep:futures"]
 

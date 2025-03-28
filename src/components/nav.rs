@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::{import_urls, Route, TitleState};
+use crate::{Route, TitleState, import_urls};
 
 #[component]
 pub fn NavBar() -> Element {

@@ -7,27 +7,11 @@ use std::time::Instant;
 use crate::components::*;
 
 use dioxus::{
-    logger::tracing::{debug, error, info, warn},
+    logger::tracing::{info, warn},
     prelude::*,
 };
-use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct URI {
-    uri_uuid: String,
-    url: String,
-    scheme: String,
-    host: String,
-    path: String,
-    live_status: String,
-    title: String,
-    auto_descr: String,
-    man_descr: String,
-    crea_user: String,
-    crea_time: String,
-    modi_user: String,
-    modi_time: String,
-}
+mod resource;
 
 #[derive(Routable, Clone, PartialEq)]
 enum Route {
@@ -67,70 +51,31 @@ pub async fn load_uris_from_db() -> Result<Vec<String>, ServerFnError> {
     let uris = server::DB.with(|f| {
         f.prepare("SELECT id, url FROM uris")
             .unwrap()
-            .query_map([], |row| Ok(row.get(1)?))
+            .query_map([], |row| row.get(1))
             .unwrap()
             .collect::<Result<Vec<_>, _>>()
             .unwrap()
     });
-    return Ok(uris);
+    Ok(uris)
 }
 
 #[server]
 pub async fn import_urls() -> Result<(), ServerFnError> {
-    use chrono::Local;
-    use reqwest::Url;
     use select::document::Document;
-    use server::extract_title_and_content;
-    use server::{download_pages, read_lines};
+    use server::{create_entries, download_pages, extract_title_and_content, read_lines};
 
     let start = Instant::now();
 
     let path = "urls.csv";
 
-    let default_uri_entry = URI {
-        uri_uuid: "".to_string(),
-        url: "-".to_string(),
-        scheme: "-".to_string(),
-        host: "-".to_string(),
-        path: "-".to_string(),
-        live_status: "1".to_string(),
-        title: "-".to_string(),
-        auto_descr: "-".to_string(),
-        man_descr: "".to_string(),
-        crea_time: "".to_string(),
-        crea_user: "api".to_string(),
-        modi_time: "".to_string(),
-        modi_user: "api".to_string(),
-    };
+    let blank_resource = resource::Resource::default();
 
-    let lines = read_lines(path).map_err(|e| ServerFnError::new("Failed to open file"))?;
-    let mut entries = Vec::new();
-    for line in lines {
-        let Ok(line) = line else {
-            debug!("Failed to parse line: {line:?}");
-            continue;
-        };
-
-        let Some(timestamp) = line.split('\t').next() else {
-            warn!("No timestamp: {line:?}");
-            continue;
-        };
-        let timestamp = timestamp.parse().unwrap_or(Local::now()).to_rfc3339();
-        let Some(url_str) = line.split('\t').nth(1) else {
-            warn!("No URL: {line:?}");
-            continue;
-        };
-        let url_str = url_str.trim();
-        let Ok(parsed_url) = Url::parse(url_str) else {
-            error!("Ill-formed URL: {}", url_str);
-            continue;
-        };
-        entries.push((parsed_url, timestamp));
-    }
-
+    let lines = read_lines(path)
+        .map_err(|error| ServerFnError::new(format!("Failed to open file ({error})")))?;
+    let entries = create_entries(lines).await;
     let mut uris = Vec::new();
     for (url, timestamp) in entries {
-        let mut uri_entry = default_uri_entry.clone();
+        let mut uri_entry = blank_resource.clone();
         uri_entry.url = url.as_str().into();
         uri_entry.uri_uuid = blake3::hash(uri_entry.url.as_bytes()).to_hex().to_string();
         uri_entry.scheme = url.scheme().into();
@@ -160,14 +105,14 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
             continue;
         };
         let document = Document::from(body.as_str());
-        let (title, content) = extract_title_and_content(&document).unwrap();
+        let (title, content) = extract_title_and_content(&document);
         uri.title = title.unwrap_or_else(|| "-".to_string());
-        uri.auto_descr = content.unwrap_or_else(|| "-").to_string();
+        uri.auto_descr = content.unwrap_or("-").to_string();
     }
 
     for (index, uri) in uris.iter().enumerate() {
         server::DB.with(|f| {
-            f.prepare(r#"INSERT INTO uris values (?,?,?,?,?,?,?,?,?,?,?,?,?);"#)
+            f.prepare("INSERT INTO uris values (?,?,?,?,?,?,?,?,?,?,?,?,?);")
                 .unwrap()
                 .execute(rusqlite::params![
                     index.to_string(),
