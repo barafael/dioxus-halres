@@ -2,10 +2,12 @@ mod components;
 #[cfg(feature = "server")]
 mod server;
 
+use std::time::Instant;
+
 use crate::components::*;
 
 use dioxus::{
-    logger::tracing::{debug, error, warn},
+    logger::tracing::{debug, error, info, warn},
     prelude::*,
 };
 use serde::{Deserialize, Serialize};
@@ -80,6 +82,8 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
     use select::document::Document;
     use server::extract_title_and_content;
     use server::{download_pages, read_lines};
+
+    let start = Instant::now();
 
     let path = "urls.csv";
 
@@ -184,5 +188,10 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
         });
     }
 
+    info!(
+        "Inserted {} URIs into the database in {}s",
+        uris.len(),
+        start.elapsed().as_secs_f32()
+    );
     Ok(())
 }
