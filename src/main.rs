@@ -93,7 +93,7 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
         entries.push(record);
     }
 
-    let mut uris = create_entries(&entries, blank_resource);
+    let mut uris = create_entries(&entries, &blank_resource);
 
     let pages = download_pages(uris.iter().map(|u| u.url.clone()).collect()).await;
     let pages = pages

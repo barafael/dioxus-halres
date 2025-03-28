@@ -34,7 +34,7 @@ pub async fn download_pages(paths: Vec<String>) -> Vec<Result<Response, reqwest:
     fetches.await
 }
 
-pub(crate) fn create_entries(entries: &[Input], blank_resource: HalResource) -> Vec<HalResource> {
+pub(crate) fn create_entries(entries: &[Input], blank_resource: &HalResource) -> Vec<HalResource> {
     let mut uris = Vec::new();
     for Input { url, timestamp } in entries {
         let mut uri_entry = blank_resource.clone();
