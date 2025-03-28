@@ -23,33 +23,6 @@ thread_local! {
     }
 }
 
-pub async fn poke_page(uri_entry: &mut URI) -> Result<(), anyhow::Error> {
-    match reqwest::get(&uri_entry.url).await {
-        Ok(response) if response.status().is_success() => {
-            let body = response.text().await?;
-            let document = Document::from(body.as_str());
-            if let Some(title) = document.find(Name("title")).next() {
-                uri_entry.title = title.text();
-            }
-            if let Some(description) = document.find(Attr("name", "description")).next() {
-                if let Some(content) = description.attr("content") {
-                    uri_entry.auto_descr = content.to_string();
-                }
-            }
-        }
-        Ok(response) => warn!(
-            "Error {} while retrieving:\n  {}",
-            response.status(),
-            uri_entry.url
-        ),
-        Err(error) => {
-            uri_entry.live_status = "0".to_string();
-            warn!("No response from URL ({error}):\n  {}", uri_entry.url);
-        }
-    }
-    Ok(())
-}
-
 pub fn extract_title_and_content(
     document: &Document,
 ) -> Result<(Option<String>, Option<&str>), anyhow::Error> {
