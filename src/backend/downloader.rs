@@ -1,12 +1,5 @@
-use std::{
-    fs::File,
-    io::{self, BufRead},
-    path::Path,
-};
-
 use crate::hal_resource::HalResource;
-use chrono::{Local, NaiveDate};
-use dioxus::logger::tracing::{debug, error, warn};
+use chrono::NaiveDate;
 use futures::StreamExt;
 use reqwest::Response;
 use select::document::Document;
