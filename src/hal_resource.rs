@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Resource {
+pub struct HalResource {
     pub(crate) uri_uuid: String,
     pub(crate) url: String,
     pub(crate) scheme: String,
@@ -17,7 +17,7 @@ pub struct Resource {
     pub(crate) modi_time: String,
 }
 
-impl Default for Resource {
+impl Default for HalResource {
     fn default() -> Self {
         Self {
             uri_uuid: String::new(),

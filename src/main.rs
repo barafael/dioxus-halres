@@ -1,8 +1,8 @@
-mod components;
 #[cfg(feature = "server")]
-mod server;
+mod backend;
+mod components;
 
-use std::time::Instant;
+use std::{fs::File, time::Instant};
 
 use crate::components::*;
 
@@ -11,7 +11,7 @@ use dioxus::{
     prelude::*,
 };
 
-mod resource;
+mod hal_resource;
 
 #[derive(Routable, Clone, PartialEq)]
 enum Route {
@@ -31,7 +31,7 @@ fn main() {
     #[cfg(feature = "server")]
     tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(server::launch());
+        .block_on(backend::launch());
     #[cfg(not(feature = "server"))]
     dioxus::launch(App);
 }
@@ -48,7 +48,7 @@ pub fn App() -> Element {
 
 #[server]
 pub async fn load_uris_from_db() -> Result<Vec<String>, ServerFnError> {
-    let uris = server::DB.with(|f| {
+    let uris = backend::DB.with(|f| {
         f.prepare("SELECT id, url FROM uris")
             .unwrap()
             .query_map([], |row| row.get(1))
@@ -61,30 +61,39 @@ pub async fn load_uris_from_db() -> Result<Vec<String>, ServerFnError> {
 
 #[server]
 pub async fn import_urls() -> Result<(), ServerFnError> {
+    use backend::downloader::{
+        Input, create_entries, download_pages, extract_title_and_content, insert_resources,
+    };
     use select::document::Document;
-    use server::{create_entries, download_pages, extract_title_and_content, read_lines};
 
     let start = Instant::now();
 
     let path = "urls.csv";
 
-    let blank_resource = resource::Resource::default();
+    let blank_resource = hal_resource::HalResource::default();
 
-    let lines = read_lines(path)
+    // parse csv file to an [`Input`] struct.
+    let file = File::open(path)
         .map_err(|error| ServerFnError::new(format!("Failed to open file ({error})")))?;
-    let entries = create_entries(lines).await;
-    let mut uris = Vec::new();
-    for (url, timestamp) in entries {
-        let mut uri_entry = blank_resource.clone();
-        uri_entry.url = url.as_str().into();
-        uri_entry.uri_uuid = blake3::hash(uri_entry.url.as_bytes()).to_hex().to_string();
-        uri_entry.scheme = url.scheme().into();
-        uri_entry.host = url.host_str().unwrap_or("-").into();
-        uri_entry.path = url.path().into();
-        uri_entry.crea_time = timestamp.to_string();
-        uri_entry.modi_time = timestamp.to_string();
-        uris.push(uri_entry);
+    let mut rdr = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .has_headers(false)
+        .from_reader(file);
+
+    let mut entries: Vec<Input> = Vec::new();
+    for result in rdr.deserialize() {
+        let record = match result {
+            Err(error) => {
+                warn!(%error, "Failed to parse record");
+                continue;
+            }
+            Ok(record) => record,
+        };
+        info!("Parsed record: {:?}", record);
+        entries.push(record);
     }
+
+    let mut uris = create_entries(&entries, blank_resource);
 
     let pages = download_pages(uris.iter().map(|u| u.url.clone()).collect()).await;
     let pages = pages
@@ -110,28 +119,7 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
         uri.auto_descr = content.unwrap_or("-").to_string();
     }
 
-    for (index, uri) in uris.iter().enumerate() {
-        server::DB.with(|f| {
-            f.prepare("INSERT INTO uris values (?,?,?,?,?,?,?,?,?,?,?,?,?);")
-                .unwrap()
-                .execute(rusqlite::params![
-                    index.to_string(),
-                    uri.url,
-                    uri.scheme,
-                    uri.host,
-                    uri.path,
-                    uri.live_status,
-                    uri.title,
-                    uri.auto_descr,
-                    uri.man_descr,
-                    uri.crea_user,
-                    uri.crea_time,
-                    uri.modi_user,
-                    uri.modi_time
-                ])
-                .unwrap();
-        });
-    }
+    insert_resources(&uris);
 
     info!(
         "Inserted {} URIs into the database in {}s",
