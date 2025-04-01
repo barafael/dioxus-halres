@@ -65,16 +65,10 @@ pub async fn load_uris_from_db() -> Result<Vec<String>, ServerFnError> {
 
 #[server]
 pub async fn import_urls() -> Result<(), ServerFnError> {
-    use backend::downloader::{
-        Input, create_entries, download_pages, extract_title_and_content, insert_resources,
-    };
-    use select::document::Document;
-
+    use backend::downloader::{insert_resources, make_entry};
     let start = Instant::now();
 
     let path = "urls.csv";
-
-    let blank_resource = hal_resource::HalResource::default();
 
     // parse csv file to an [`Input`] struct.
     let file = File::open(path)
@@ -84,44 +78,25 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
         .has_headers(false)
         .from_reader(file);
 
-    let mut entries: Vec<Input> = Vec::new();
-    for result in rdr.deserialize() {
-        let record = match result {
+    let (sender, mut receiver) = halres_downloader::run(64, 12);
+
+    for record in rdr.deserialize() {
+        match record {
+            Ok(record) => sender.send(record).await.unwrap(),
             Err(error) => {
-                warn!(%error, "Failed to parse record");
+                warn!(%error, "invalid record");
                 continue;
             }
-            Ok(record) => record,
-        };
-        info!("Parsed record: {:?}", record);
-        entries.push(record);
+        }
+    }
+    drop(sender);
+
+    let mut uris = vec![];
+    while let Some(res) = receiver.recv().await {
+        uris.push(res);
     }
 
-    let mut uris = create_entries(&entries, &blank_resource);
-
-    let pages = download_pages(uris.iter().map(|u| u.url.clone()).collect()).await;
-    let pages = pages
-        .into_iter()
-        .filter_map(|page| match page {
-            Ok(page) => Some(page),
-            Err(error) => {
-                warn!(%error, "Fetch failure");
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    for (page, uri) in pages.into_iter().zip(uris.iter_mut()) {
-        let Ok(body) = page.text().await else {
-            uri.live_status = "0".to_string();
-            warn!("No response from URL: {:?}", uri.url);
-            continue;
-        };
-        let document = Document::from(body.as_str());
-        let (title, content) = extract_title_and_content(&document);
-        uri.title = title.unwrap_or_else(|| "-".to_string());
-        uri.auto_descr = content.unwrap_or("-").to_string();
-    }
+    let uris: Vec<_> = uris.into_iter().map(make_entry).collect();
 
     insert_resources(&uris);
 
