@@ -6,7 +6,7 @@ pub fn Table() -> Element {
         div { id: "example-table" }
         button {
             onclick: move |_event| async move {
-                document::eval(include_str!("../../assets/table.min.js")).await.unwrap();
+                let _ = document::eval(include_str!("../../assets/table.min.js")).await;
             },
         }
     }

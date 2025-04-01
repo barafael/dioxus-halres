@@ -42,6 +42,10 @@ pub fn App() -> Element {
     use_context_provider(|| TitleState(title));
 
     rsx! {
+        document::Link {
+            href: "https://unpkg.com/tabulator-tables/dist/css/tabulator.min.css",
+            rel: "stylesheet",
+        }
         Router::<Route> {}
     }
 }
