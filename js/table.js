@@ -1,28 +1,54 @@
-import { TabulatorFull as Tabulator } from 'tabulator-tables';
+import { TabulatorFull as Tabulator } from "tabulator-tables";
 
 //define some sample data
-var tabledata = [
-    { id: 1, name: "Oli Bob", age: "12", col: "red", dob: "" },
-    { id: 2, name: "Mary May", age: "1", col: "blue", dob: "14/05/1982" },
-    { id: 3, name: "Christine Lobowski", age: "42", col: "green", dob: "22/05/1982" },
-    { id: 4, name: "Brendon Philips", age: "125", col: "orange", dob: "01/08/1980" },
-    { id: 5, name: "Margret Marmajuke", age: "16", col: "yellow", dob: "31/01/1999" },
-];
+var tabledata = [];
 
-//create Tabulator on DOM element with id "example-table"
-var table = new Tabulator("#example-table", {
-    height: 205, // set height of table (in CSS or here), this enables the Virtual DOM and improves render speed dramatically (can be any valid css height value)
-    data: tabledata, //assign data to table
-    layout: "fitColumns", //fit columns to width of table (optional)
-    columns: [ //Define Table Columns
-        { title: "Name", field: "name", width: 150 },
-        { title: "Age", field: "age", hozAlign: "left", formatter: "progress" },
-        { title: "Favourite Color", field: "col" },
-        { title: "Date Of Birth", field: "dob", sorter: "date", hozAlign: "center" },
-    ],
+let table = new Tabulator("#example-table", {
+  maxHeight: 1000, // set height of table to enable virtual DOM
+  data: tabledata, //load initial data into table
+  layout: "fitColumns", //fit columns to width of table (optional)
+  placeholder: "No Hits.",
+  placeholderHeaderFilter: "No Hits.",
+  pagination: true, //enable pagination
+  paginationCounter: "rows",
+  //paginationMode:"local", //enable remote pagination
+  paginationSize: 500, //optional parameter to request a certain number of rows per page
+  movableColumns: true,
+  columnHeaderSortMulti: true,
+  groupBy: [],
+  groupStartOpen: [false, false],
+  //responsiveLayout:"collapse",//
+  columns: [
+    //Define Table Columns
+    { title: "Domain", field: "host", sorter: "string", headerFilter: true },
+    { title: "Title", field: "title", sorter: "string", headerFilter: true },
+    {
+      title: "URL",
+      field: "url",
+      headerFilter: true,
+      sorter: "string",
+      formatter: "link",
+      formatterParams: {
+        labelField: "",
+        urlPrefix: "",
+        target: "_blank",
+      },
+    },
+    {
+      title: "Description",
+      field: "auto_descr",
+      sorter: "string",
+      headerFilter: true,
+      tooltip: function (e, cell, onRendered) {
+        return cell.getRow().getData().auto_descr;
+      },
+    },
+  ],
+  printRowRange: "active",
+  printAsHtml: true,
 });
 
-//trigger an alert message when the row is clicked
-table.on("rowClick", function (e, row) {
-    alert("Row " + row.getData().id + " Clicked!!!!");
+// behaviour when the row is clicked
+table.on("rowClick", async function (e) {
+  console.log("received row click event - doing nothing with it");
 });

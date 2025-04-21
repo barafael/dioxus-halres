@@ -65,7 +65,7 @@ pub async fn load_uris_from_db() -> Result<Vec<String>, ServerFnError> {
 
 #[server]
 pub async fn import_urls() -> Result<(), ServerFnError> {
-    use backend::downloader::{insert_resources, make_entry};
+    use backend::downloader::{insert_resources, make_resource};
     let start = Instant::now();
 
     let path = "urls.csv";
@@ -96,7 +96,7 @@ pub async fn import_urls() -> Result<(), ServerFnError> {
         uris.push(res);
     }
 
-    let uris: Vec<_> = uris.into_iter().map(make_entry).collect();
+    let uris: Vec<_> = uris.into_iter().map(make_resource).collect();
 
     insert_resources(&uris);
 

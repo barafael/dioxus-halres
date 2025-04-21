@@ -40,11 +40,6 @@ server = [
     "dep:futures",
     "dep:halres-downloader",
 ]
-blake3 = ["dep:blake3"]
-select = ["dep:select"]
-futures = ["dep:futures"]
-csv = ["dep:csv"]
-url = ["dep:url"]
 
 [profile]
 

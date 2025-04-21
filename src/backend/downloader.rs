@@ -1,7 +1,7 @@
 use crate::hal_resource::HalResource;
 use halres_downloader::Resource;
 
-pub(crate) fn make_entry(entry: Resource) -> HalResource {
+pub(crate) fn make_resource(entry: Resource) -> HalResource {
     let Resource {
         url,
         title,
